@@ -15,6 +15,8 @@ from typing import List, Optional
 from accelerate import Accelerator
 import numpy as np
 import random
+from datetime import datetime
+from clearml import Task
 
 
 from utils import get_logger
@@ -116,6 +118,13 @@ def get_config(args):
 
 
 if __name__ == "__main__":
+    dt = (
+        str(datetime.now().replace(microsecond=0))
+        .replace(" ", "_")
+        .replace(":", "_")
+        .replace("-", "_")
+    )
+    
     parser = argparse.ArgumentParser()
     parser.add_argument("-m","--model_name", type=str, default="meta-llama/Llama-2-7b-hf")
     parser.add_argument("-t","--token", type=str, default=None)
@@ -162,7 +171,13 @@ if __name__ == "__main__":
     parser.add_argument("--seed",default=42,type=int,help="Seed for random number generators")
 
     parser.add_argument("--completion_only", default=False,action="store_true", help="Only use completion loss")
+        
+    parser.add_argument("--project_name", default="stc-llama")
+    
+    parser.add_argument("--experiment_name", default=f"llama-7b_{dt}")
     args = parser.parse_args()
+
+    task = Task.init(project_name=args.project_name, task_name=args.experiment_name)
 
     seed_all(args.seed)
 
@@ -332,7 +347,7 @@ if __name__ == "__main__":
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         gradient_checkpointing=args.gradient_checkpointing,
         weight_decay=args.weight_decay,
-        report_to="wandb",
+        report_to="tensorboard",
         load_best_model_at_end=True,
         save_total_limit=args.save_limit,
         bf16=True if torch.cuda.is_bf16_supported() else False,

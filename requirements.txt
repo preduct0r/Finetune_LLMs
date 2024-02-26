@@ -10,3 +10,5 @@ deepspeed
 langchain
 trl
 rich
+tensorboard
+clearml
