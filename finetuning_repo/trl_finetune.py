@@ -136,6 +136,7 @@ if __name__ == "__main__":
 
     parser.add_argument("-lr","--learning_rate", type=float, default=1e-4)
     parser.add_argument("--lr_scheduler_type", type=str, default="constant")
+    parser.add_argument("--dataset_text_field", type=str, default="text")
     parser.add_argument("--warmup_steps", type=int, default=10)
     parser.add_argument("--weight_decay", type=float, default=0.05)
     parser.add_argument("-o","--output_dir", type=str, default="./checkpoints")
@@ -171,13 +172,19 @@ if __name__ == "__main__":
     parser.add_argument("--seed",default=42,type=int,help="Seed for random number generators")
 
     parser.add_argument("--completion_only", default=False,action="store_true", help="Only use completion loss")
+    
+    parser.add_argument("--disable_clearml", action="store_true", default=False)
         
     parser.add_argument("--project_name", default="stc-llama")
     
     parser.add_argument("--experiment_name", default=f"llama-7b_{dt}")
+    
+    parser.add_argument("--partition", default="gpu")
+    parser.add_argument("--num_gpus", default=1)
     args = parser.parse_args()
 
-    task = Task.init(project_name=args.project_name, task_name=args.experiment_name)
+    if not args.disable_clearml:
+        task = Task.init(project_name=args.project_name, task_name=args.experiment_name)
 
     seed_all(args.seed)
 
@@ -382,7 +389,7 @@ if __name__ == "__main__":
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=validation_dataset,
-        dataset_text_field="text",
+        dataset_text_field=args.dataset_text_field,
         max_seq_length=block_size,
         tokenizer=tokenizer,
         data_collator=data_collator,

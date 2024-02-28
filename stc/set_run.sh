@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MAX_JOBS=1
+# MAX_JOBS=1
 
 # while true
 # do
@@ -15,17 +15,18 @@ MAX_JOBS=1
 #   sleep 10
 # done
 
-export NUM_GPU=4
+export NUM_GPU="1"
+export PARTITION='gpu'
 
 #  --nodes=1 
 
-# sbatch --export=PATH,LD_LIBRARY_PATH \
-#       --cpus-per-task=12 --partition=gpu --gres=gpu:$NUM_GPU \
-#       --time=0-08:00:00 --job-name=stcllama3 \
-#       stc/run.sh || exit 1
-
 sbatch --export=PATH,LD_LIBRARY_PATH \
-      --cpus-per-task=16 --partition=a100 --gres=gpu:1 \
-      --job-name=stcllama -o slurm_output.txt \
+      --cpus-per-task=12 --partition=$PARTITION --gres=gpu:$NUM_GPU \
+      --time=0-08:00:00 --job-name=stcllama3 \
       stc/run.sh || exit 1
+
+# sbatch --export=PATH,LD_LIBRARY_PATH \
+#       --cpus-per-task=16 --partition=a100 --gres=gpu:1 \
+#       --job-name=stcllama \
+#       stc/run.sh || exit 1
 

@@ -1,0 +1,85 @@
+train_file: quotes_dataset/small_llama/train.csv
+validation_file: quotes_dataset/small_llama/train.csv
+
+rope_scale: null
+pad_token_id: 18636
+add_eos_token: false
+add_bos_token: false
+add_pad_token: false
+custom_tokens: null
+train_dataset_ratio: 1.0
+validation_dataset_ratio: 1.0
+seed: 42
+completion_only: false
+
+clearml:
+  disable_clearml: true
+
+slurm:
+  partition: null
+  num_gpus: 1
+
+model:
+  model_name: /mnt/hs/dorado6/mamaev-n/sheared_llama_1.3b
+  token: null 
+  split_model: false
+  block_size: 1024
+  pretraining_tp: 1
+
+train:
+  output_dir: ./checkpoints
+  epochs: 1
+  batch_size: 1
+  optim: paged_adamw_32bit
+  gradient_accumulation_steps: 1
+  gradient_checkpointing: false
+  logging_steps: 200
+  learning_rate: 1e-4
+  weight_decay: 0.05
+  warmup_steps: 10
+  warmup_ratio: 0.03
+  lr_scheduler_type: cosine
+  report_to: tensorboard
+  log_steps: 5
+  eval_steps: 10
+  save_steps: 1000000
+  save_limit: 1
+  trust_remote_code: false
+  disable_flash_attention: false
+
+
+sft:
+  max_seq_length: 1024
+  dataset_text_field: '0'
+
+peft:
+  disable_lora: true
+  lora_rank: 64
+  lora_alpha: 16
+  lora_dropout: 0.1
+  all_linear: false
+  long_lora: false
+
+quant: 
+  use_int4: false
+  use_int8: false
+
+
+
+
+
+
+
+
+
+
+# hydra params
+defaults:  
+  - _self_  
+  - override hydra/hydra_logging: disabled  
+  - override hydra/job_logging: disabled  
+  
+hydra:  
+  output_subdir: null  
+  run:  
+    dir: .
