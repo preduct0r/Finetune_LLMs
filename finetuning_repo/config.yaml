@@ -20,11 +20,10 @@ slurm:
   num_gpus: 1
 
 model:
-  model_name: /mnt/hs/dorado6/mamaev-n/sheared_llama_1.3b
+  model_name: /mnt/cs/nlu/models/LLMs/Sheared-LLaMA-1.3B
   token: null 
   split_model: false
   block_size: 1024
-  pretraining_tp: 1
 
 train:
   output_dir: ./checkpoints
@@ -45,12 +44,12 @@ train:
   save_steps: 1000000
   save_limit: 1
   trust_remote_code: false
-  disable_flash_attention: false
+  disable_flash_attention: true
 
 
 sft:
   max_seq_length: 1024
-  dataset_text_field: '0'
+  dataset_text_field: 'text'
 
 peft:
   disable_lora: true

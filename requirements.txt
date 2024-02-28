@@ -13,3 +13,5 @@ rich
 tensorboard
 clearml
 sentencepiece
+hydra-core
+omegaconf

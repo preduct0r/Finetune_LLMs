@@ -17,6 +17,8 @@ import numpy as np
 import random
 from datetime import datetime
 from clearml import Task
+import hydra
+from omegaconf import DictConfig, OmegaConf
 
 
 from utils import get_logger
@@ -90,13 +92,13 @@ def find_all_linear_names(args, model,add_lm_head=True):
 
 def get_config(args):
     config_kwargs = {
-        "trust_remote_code": True if args.trust_remote_code else None,
-        "token":args.token
+        "trust_remote_code": True if args.train["trust_remote_code"] else None,
+        "token":args.model["token"]
     }
-    config = AutoConfig.from_pretrained(args.model_name, **config_kwargs)
+    config = AutoConfig.from_pretrained(args.model["model_name"], **config_kwargs)
 
     config.use_cache = False
-    if not args.gradient_checkpointing:
+    if not args.train["gradient_checkpointing"]:
         logger.info("Not using gradient checkpointing")
         config.gradient_checkpointing = False
     else:
@@ -104,8 +106,8 @@ def get_config(args):
         config.gradient_checkpointing = True
 
     orig_ctx_len = getattr(config, "max_position_embeddings", None)
-    if orig_ctx_len and args.block_size > orig_ctx_len and args.rope_scale is None:
-        scaling_factor = float(math.ceil(args.block_size / orig_ctx_len))
+    if orig_ctx_len and args.model["block_size"] > orig_ctx_len and args.rope_scale is None:
+        scaling_factor = float(math.ceil(args.model["block_size"] / orig_ctx_len))
         config.rope_scaling = {"type": "linear", "factor": scaling_factor}
         logger.info("Scaling context length by %f", scaling_factor)
     elif args.rope_scale is not None:
@@ -116,91 +118,34 @@ def get_config(args):
         logger.info("Not scaling context length")
     return config
 
-
-if __name__ == "__main__":
+    
+@hydra.main(version_base=None, config_path=".", config_name="config")
+def main(args : DictConfig):
     dt = (
         str(datetime.now().replace(microsecond=0))
         .replace(" ", "_")
         .replace(":", "_")
         .replace("-", "_")
     )
-    
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-m","--model_name", type=str, default="meta-llama/Llama-2-7b-hf")
-    parser.add_argument("-t","--token", type=str, default=None)
-    parser.add_argument("--split_model", action="store_true",default=False)
-    parser.add_argument("--block_size", type=int, default=128)
-    parser.add_argument("--lora_rank", type=int, default=64)
-    parser.add_argument("--lora_alpha", type=int, default=None)
-    parser.add_argument("--lora_dropout", type=float, default=0.1)
 
-    parser.add_argument("-lr","--learning_rate", type=float, default=1e-4)
-    parser.add_argument("--lr_scheduler_type", type=str, default="constant")
-    parser.add_argument("--dataset_text_field", type=str, default="text")
-    parser.add_argument("--warmup_steps", type=int, default=10)
-    parser.add_argument("--weight_decay", type=float, default=0.05)
-    parser.add_argument("-o","--output_dir", type=str, default="./checkpoints")
-    parser.add_argument("--log_steps",type=int, default=10)
-    parser.add_argument("--eval_steps",type=int, default=10)
-    parser.add_argument("--save_steps",type=int, default=10)
-    parser.add_argument("-e","--epochs",  type=float,default=1)
-    parser.add_argument("-b","--batch_size", type=int, default=1)
-    parser.add_argument("--gradient_accumulation_steps", type=int, default=1)
-    parser.add_argument("--gradient_checkpointing", action="store_true", default=False)
-    parser.add_argument("--trust_remote_code", action="store_true", default=False)
-
-    parser.add_argument("-tf","--train_file", type=str, required=True)
-    parser.add_argument("-vf","--validation_file", type=str, required=True)
-    parser.add_argument("-s","--save_limit", type=int, default=1)
-    
-    parser.add_argument("--use_int4", action="store_true", default=False)
-    parser.add_argument("--use_int8", action="store_true", default=False)
-    parser.add_argument("--disable_lora", action="store_true", default=False)
-    parser.add_argument("--disable_flash_attention", action="store_true", help="Disable flash attention", default=False)
-    parser.add_argument("--all_linear", action="store_true", help="Use Lora on all linear layers", default=False)
-    parser.add_argument("--long_lora", action="store_true", help="Use long lora settings", default=False)
-    parser.add_argument("--rope_scale", type=float,default=None)
-    
-    parser.add_argument("--pad_token_id", default=None, type=int, help="The end of sequence token.")
-    parser.add_argument("--add_eos_token", action="store_true", help="Add EOS token to tokenizer", default=False)
-    parser.add_argument("--add_bos_token",  action="store_true", help="Add BOS token to tokenizer", default=False)
-    parser.add_argument("--custom_tokens", default=None, type=str, help="Custom tokens to add to tokenizer")
-    parser.add_argument("--add_pad_token", action="store_true", help="Add PAD token to tokenizer", default=False)
-
-    parser.add_argument("--train_dataset_ratio",default=1.0,type=float,help="Ratio of the training dataset to use")
-    parser.add_argument("--validation_dataset_ratio",default=1.0,type=float,help="Ratio of the validation dataset to use")
-    parser.add_argument("--seed",default=42,type=int,help="Seed for random number generators")
-
-    parser.add_argument("--completion_only", default=False,action="store_true", help="Only use completion loss")
-    
-    parser.add_argument("--disable_clearml", action="store_true", default=False)
-        
-    parser.add_argument("--project_name", default="stc-llama")
-    
-    parser.add_argument("--experiment_name", default=f"llama-7b_{dt}")
-    
-    parser.add_argument("--partition", default="gpu")
-    parser.add_argument("--num_gpus", default=1)
-    args = parser.parse_args()
-
-    if not args.disable_clearml:
+    if not args.clearml["disable_clearml"]:
         task = Task.init(project_name=args.project_name, task_name=args.experiment_name)
 
     seed_all(args.seed)
 
-    if args.lora_alpha is None:
-        args.lora_alpha = args.lora_rank * 2
-        logger.info("Lora alpha set to None... Setting lora_alpha to %d", args.lora_alpha)
+    if args.peft["lora_alpha"] is None:
+        args.peft["lora_rank"] = args.peft["lora_rank"] * 2
+        logger.info("Lora alpha set to None... Setting lora_alpha to %d", args.args.peft["lora_alpha"])
 
     # replace_llama_attn(use_full=False)
 
-    if args.token is None:
+    if args.model["token"] is None:
         access_token = os.getenv("HF_TOKEN", "")
     else:
-        access_token = args.token
+        access_token = args.model["token"]
     
-    if args.token is None:
-        args.token = access_token
+    if args.model["token"] is None:
+        args.model["token"] = access_token
 
     config = get_config(args)
     config_dict = config.to_dict()
@@ -209,11 +154,11 @@ if __name__ == "__main__":
 
     use_flash_attention = False
 
-    if not args.disable_flash_attention and  model_type not in SUPPORTED_FLASH_MODELS:
+    if not args.train["disable_flash_attention"] and  model_type not in SUPPORTED_FLASH_MODELS:
         logger.info("Model is not llama, mistral, or falcon disabling flash attention...")
-    elif args.disable_flash_attention and model_type in SUPPORTED_FLASH_MODELS:
+    elif args.train["disable_flash_attention"] and model_type in SUPPORTED_FLASH_MODELS:
         logger.info("Model is llama, mistral or falcon could be using flash attention...")
-    elif not args.disable_flash_attention:
+    elif not args.train["disable_flash_attention"]:
         logger.info("Using flash attention...")
         use_flash_attention = True
 
@@ -221,13 +166,13 @@ if __name__ == "__main__":
     if "WANDB_PROJECT" not in os.environ:
         os.environ["WANDB_PROJECT"] = "GPT_finetuning"
 
-    if args.split_model:
+    if args.model["split_model"]:
         logger.info("Splitting the model across all available devices...")
         kwargs = {"device_map":"auto"}
     else:
         kwargs = {"device_map":None}
 
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name, token=access_token,trust_remote_code=args.trust_remote_code,add_eos_token=args.add_eos_token,add_bos_token=args.add_bos_token,use_fast=True)
+    tokenizer = AutoTokenizer.from_pretrained(args.model["model_name"], token=access_token,trust_remote_code=args.train["trust_remote_code"],add_eos_token=args.add_eos_token,add_bos_token=args.add_bos_token,use_fast=True)
     custom_tokens = None
     if args.custom_tokens is not None:
         logger.info("Adding custom tokens to tokenizer...")
@@ -257,10 +202,10 @@ if __name__ == "__main__":
         special_tokens_dict["unk_token"] = DEFAULT_UNK_TOKEN
 
 
-    block_size = args.block_size
+    block_size = args.model["block_size"]
     logger.info("Using a block size of %d", block_size)
 
-    if args.use_int4:
+    if args.quant["use_int4"]:
         logger.info("Using int4 quantization")
         bnb_config = BitsAndBytesConfig(
             load_in_4bit=True,
@@ -268,13 +213,13 @@ if __name__ == "__main__":
             bnb_4bit_compute_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
             bnb_4bit_use_double_quant=True,
         )
-        if not args.split_model:
+        if not args.model["split_model"]:
             device_index = Accelerator().process_index
             device_map = {"": device_index}
             kwargs["device_map"] = device_map
         optimizer = "adamw_bnb_8bit"
         args.use_int8 = False
-    elif args.use_int8:
+    elif args.quant["use_int8"]:
         logger.info("Using int8 quantization")
         bnb_config = BitsAndBytesConfig(
             load_in_8bit=True,
@@ -286,7 +231,7 @@ if __name__ == "__main__":
         optimizer = "adamw_torch"
 
     torch_dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
-    model = AutoModelForCausalLM.from_pretrained(args.model_name, token=access_token,quantization_config=bnb_config,trust_remote_code=args.trust_remote_code,torch_dtype=torch_dtype,config=config,use_flash_attention_2=use_flash_attention, **kwargs)
+    model = AutoModelForCausalLM.from_pretrained(args.model["model_name"], token=access_token, quantization_config=bnb_config,trust_remote_code=args.train["trust_remote_code"],torch_dtype=torch_dtype, config=config, use_flash_attention_2=use_flash_attention, **kwargs)
     added_tokens = smart_tokenizer_and_embedding_resize(
         special_tokens_dict=special_tokens_dict,
         tokenizer=tokenizer,
@@ -294,19 +239,19 @@ if __name__ == "__main__":
         custom_tokens=custom_tokens
     )
 
-    if not args.disable_lora and args.all_linear:
+    if not args.peft["disable_lora"] and args.peft["all_linear"]:
         target_modules = find_all_linear_names(args, model)
         logger.info("Using LORA on all linear layers: %s", target_modules)
         if added_tokens:
             target_modules.pop(target_modules.index("lm_head"))
             logger.info("Removing lm_head from target modules, will use in modules_to_save")
-    elif not args.disable_lora:
+    elif not args.peft["disable_lora"]:
         target_modules = None
         logger.info("Using LORA on default layers")
 
 
-    if not args.disable_lora:
-        if args.long_lora:
+    if not args.peft["disable_lora"]:
+        if args.peft["long_lora"]:
             logger.info("Using long lora settings...")
             modules_to_save = ["embed_tokens","input_layernorm","post_attention_layernorm","norm"]
 
@@ -318,12 +263,12 @@ if __name__ == "__main__":
         else:
             modules_to_save = None
         peft_config = LoraConfig(
-            task_type=TaskType.CAUSAL_LM, inference_mode=False, r=args.lora_rank, lora_alpha=args.lora_alpha, lora_dropout=args.lora_dropout,target_modules=target_modules,modules_to_save=modules_to_save
+            task_type=TaskType.CAUSAL_LM, inference_mode=False, r=args.peft["lora_rank"], lora_alpha=args.peft["lora_alpha"], lora_dropout=args.peft["lora_dropout"],target_modules=target_modules,modules_to_save=modules_to_save
         )
         logger.info("Using LORA...")
-        if args.use_int4 or args.use_int8:
+        if args.quant["use_int4"] or args.quant["use_int8"]:
             logger.info("Preparing model for kbit training...")
-            model = prepare_model_for_kbit_training(model,use_gradient_checkpointing=True if args.gradient_checkpointing else False)
+            model = prepare_model_for_kbit_training(model,use_gradient_checkpointing=True if args.train["gradient_checkpointing"] else False)
 
         logger.info("Getting PEFT model...")
         model = get_peft_model(model, peft_config)
@@ -336,27 +281,27 @@ if __name__ == "__main__":
     training_args = TrainingArguments(
         do_train=True,
         do_eval=True,
-        output_dir=args.output_dir,
+        output_dir=args.train["output_dir"],
         dataloader_drop_last=True,
         evaluation_strategy="steps",
         save_strategy="steps",
         logging_strategy="steps",
-        num_train_epochs=args.epochs,
-        eval_steps=args.eval_steps,
-        save_steps=args.save_steps,
-        logging_steps=args.log_steps,
-        per_device_train_batch_size=args.batch_size,
-        per_device_eval_batch_size=args.batch_size*2,
+        num_train_epochs=args.train["epochs"],
+        eval_steps=args.train["eval_steps"],
+        save_steps=args.train["save_steps"],
+        logging_steps=args.train["log_steps"],
+        per_device_train_batch_size=args.train["batch_size"],
+        per_device_eval_batch_size=args.train["batch_size"]*2,
         optim=optimizer,
-        learning_rate=args.learning_rate,
-        lr_scheduler_type=args.lr_scheduler_type,
-        warmup_steps=args.warmup_steps,
-        gradient_accumulation_steps=args.gradient_accumulation_steps,
-        gradient_checkpointing=args.gradient_checkpointing,
-        weight_decay=args.weight_decay,
+        learning_rate=args.train["learning_rate"],
+        lr_scheduler_type=args.train["lr_scheduler_type"],
+        warmup_steps=args.train["warmup_steps"],
+        gradient_accumulation_steps=args.train["gradient_accumulation_steps"],
+        gradient_checkpointing=args.train["gradient_checkpointing"],
+        weight_decay=args.train["weight_decay"],
         report_to="tensorboard",
         load_best_model_at_end=True,
-        save_total_limit=args.save_limit,
+        save_total_limit=args.train["save_limit"],
         bf16=True if torch.cuda.is_bf16_supported() else False,
         fp16=False if torch.cuda.is_bf16_supported() else True,
     )
@@ -389,7 +334,7 @@ if __name__ == "__main__":
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=validation_dataset,
-        dataset_text_field=args.dataset_text_field,
+        dataset_text_field=args.sft["dataset_text_field"],
         max_seq_length=block_size,
         tokenizer=tokenizer,
         data_collator=data_collator,
@@ -398,3 +343,7 @@ if __name__ == "__main__":
 
     # train
     trainer.train()
+
+
+if __name__ == "__main__":
+    main()
