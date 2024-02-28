@@ -12,3 +12,4 @@ trl
 rich
 tensorboard
 clearml
+sentencepiece
