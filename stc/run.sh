@@ -11,6 +11,6 @@ conda activate stc_llama
 
 cd ~/projects/LLM/Finetune_LLMs_github
 
-accelerate launch --config_file stc/accelerate.yaml --num_processes $NUM_GPUS finetuning_repo/trl_finetune.py --partition $PARTITION --num_gpus $NUM_GPUS
+accelerate launch --config_file stc/accelerate.yaml finetuning_repo/trl_finetune.py
 
 exec <&-

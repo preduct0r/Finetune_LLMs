@@ -129,7 +129,7 @@ def main(args : DictConfig):
     )
 
     if not args.clearml["disable_clearml"]:
-        task = Task.init(project_name=args.project_name, task_name=args.experiment_name)
+        task = Task.init(project_name=args.clearml["project_name"], task_name=args.clearml["experiment_name"] if args.clearml["experiment_name"] else f"llama-7b_{dt}")
 
     seed_all(args.seed)
 

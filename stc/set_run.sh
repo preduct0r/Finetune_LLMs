@@ -20,12 +20,14 @@ source get_slurm_params.sh
 
 #  --nodes=1 
 
-sbatch --export=PATH,LD_LIBRARY_PATH \
-      --cpus-per-task="$CPUS_PER_TASK" \
-      --partition="$PARTITION" \
-      --gres=gpu:"$GRES" \
-      --time=0-08:00:00 \
-      --job-name="$JOB_NAME" \
-      stc/run.sh || exit 1
+# SLURM SUBMIT SCRIPT
+#SBATCH --export=PATH,LD_LIBRARY_PATH
+#SBATCH --cpus-per-task="$CPUS_PER_TASK"
+#SBATCH --partition="$PARTITION"
+#SBATCH --gres=gpu:"$GRES"
+#SBATCH --time=0-08:00:00
+#SBATCH --job-name="$JOB_NAME" 
+
+sbatch stc/run.sh || exit 1
 
 exec <&-
