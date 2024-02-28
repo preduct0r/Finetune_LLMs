@@ -15,18 +15,17 @@
 #   sleep 10
 # done
 
-export NUM_GPU="1"
-export PARTITION='gpu'
+filename="finetuning_repo/config.yaml"
+source get_slurm_params.sh
 
 #  --nodes=1 
 
 sbatch --export=PATH,LD_LIBRARY_PATH \
-      --cpus-per-task=12 --partition=$PARTITION --gres=gpu:$NUM_GPU \
-      --time=0-08:00:00 --job-name=stcllama3 \
+      --cpus-per-task="$CPUS_PER_TASK" \
+      --partition="$PARTITION" \
+      --gres=gpu:"$GRES" \
+      --time=0-08:00:00 \
+      --job-name="$JOB_NAME" \
       stc/run.sh || exit 1
 
-# sbatch --export=PATH,LD_LIBRARY_PATH \
-#       --cpus-per-task=16 --partition=a100 --gres=gpu:1 \
-#       --job-name=stcllama \
-#       stc/run.sh || exit 1
-
+exec <&-
