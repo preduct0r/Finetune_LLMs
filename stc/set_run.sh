@@ -22,6 +22,6 @@ export NUM_GPUS="1"
 #  --nodes=1 
 
 sbatch --export=PATH,LD_LIBRARY_PATH \
-      --cpus-per-task=12 --partition=$PARTITION --gres=gpu:$NUM_GPU \
+      --cpus-per-task=12 --partition=$PARTITION --gres=gpu:$NUM_GPUS \
       --time=0-08:00:00 --job-name=stcllama3 \
       stc/run.sh || exit 1

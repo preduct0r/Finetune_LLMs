@@ -24,6 +24,8 @@ from omegaconf import DictConfig, OmegaConf
 from utils import get_logger
 logger = get_logger("finetune", "info")
 
+os.environ["TOKENIZERS_PARALLELISM"] = "false" # To avoid warnings about parallelism in tokenizers
+
 SUPPORTED_FLASH_MODELS = ["llama", "mistral", "falcon","mixtral","opt"]
 DEFAULT_PAD_TOKEN = "[PAD]"
 DEFAULT_EOS_TOKEN = "</s>"

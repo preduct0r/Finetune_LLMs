@@ -34,7 +34,6 @@ train:
   output_dir: ./checkpoints
   epochs: 1
   batch_size: 1
-  optim: paged_adamw_32bit
   gradient_accumulation_steps: 1
   gradient_checkpointing: false
   logging_steps: 200
