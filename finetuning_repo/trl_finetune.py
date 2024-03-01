@@ -1,4 +1,4 @@
-import argparse
+import re
 from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig,TrainingArguments,AutoConfig
 from datasets import Dataset
@@ -133,7 +133,7 @@ def main(args : DictConfig):
     )
 
     if not args.clearml["disable_clearml"]:
-        task = Task.init(project_name=args.clearml["project_name"], task_name=args.clearml["experiment_name"] if args.clearml["experiment_name"] else f"llama-7b_{dt}")
+        task = Task.init(project_name=args.clearml["project_name"], task_name=args.clearml["experiment_name"] if args.clearml["experiment_name"] else f"llama-sft_{dt}")
         
     print('__CUDNN VERSION:', torch.backends.cudnn.version())
     print('__Number CUDA Devices:', torch.cuda.device_count())
@@ -355,4 +355,21 @@ def main(args : DictConfig):
 
 
 if __name__ == "__main__":
+    # control cluster wait time
+    with open("./date.txt", "r") as f:
+        d = f.read().strip()
+    queue_time = datetime.strptime(d, '%m/%d/%y %H:%M:%S')
+    launch_time = datetime.now()
+    wait_hours = (launch_time - queue_time).total_seconds() / 3600
+    
+    with open("stc/config.yaml", "r") as f:
+        cfg = f.read()   
+         
+    cfg = re.sub("queue_time: .*\n", f"queue_time: {queue_time.strftime('%m/%d/%y %H:%M:%S')}\n", cfg)
+    cfg = re.sub("launch_time: .*\n", f"launch_time: {launch_time.strftime('%m/%d/%y %H:%M:%S')}\n", cfg)
+    cfg = re.sub("wait_hours: .*\n", f"wait_hours: {wait_hours}\n", cfg)
+    
+    with open("stc/config.yaml", "w") as f:
+        f.write(cfg)
+        
     main()

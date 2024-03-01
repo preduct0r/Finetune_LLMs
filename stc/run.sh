@@ -12,6 +12,9 @@ JOB_NAME=sft_llama
 export NCCL_DEBUG=INFO
 date
 
+cd ~/projects/LLM/Finetune_LLMs
+echo "$(date '+%m/%d/%y %H:%M:%S')" > date.txt
+
 set | grep "SLURM"
 
 export CUDA_HOME=/mnt/hs/dorado6/mamaev-n/cuda-11.8
@@ -34,7 +37,6 @@ unset __conda_setup
 
 # launch
 conda activate stc_llama
-cd ~/projects/LLM/Finetune_LLMs
 
 sbatch --export=PATH,LD_LIBRARY_PATH \
     --cpus-per-task=$CPUS_PER_TASK \

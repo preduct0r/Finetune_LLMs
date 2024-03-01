@@ -3,6 +3,10 @@ slurm:
   gres: null
   cpus-per-task: null
   job-name: null
+  queue_time: null
+  launch_time: null
+  wait_hours: null
+
 
 train_file: quotes_dataset/small_llama/train.csv
 validation_file: quotes_dataset/small_llama/train.csv
@@ -19,7 +23,7 @@ seed: 42
 completion_only: false
 
 clearml:
-  disable_clearml:
+  disable_clearml: false
   project_name: stc-llama
   experiment_name: null
 
