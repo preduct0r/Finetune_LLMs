@@ -26,7 +26,7 @@ logger = get_logger("finetune", "info")
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false" # To avoid warnings about parallelism in tokenizers
 
-SUPPORTED_FLASH_MODELS = ["llama", "mistral", "falcon","mixtral","opt"]
+SUPPORTED_FLASH_MODELS = ["llama", "mistral", "falcon", "mixtral", "opt"]
 DEFAULT_PAD_TOKEN = "[PAD]"
 DEFAULT_EOS_TOKEN = "</s>"
 DEFAULT_BOS_TOKEN = "<s>"
@@ -121,8 +121,10 @@ def get_config(args):
     return config
 
     
-@hydra.main(version_base=None, config_path=".", config_name="config")
+@hydra.main(version_base=None, config_path="../stc", config_name="config")
 def main(args : DictConfig):
+    print(OmegaConf.to_yaml(args))
+    
     dt = (
         str(datetime.now().replace(microsecond=0))
         .replace(" ", "_")

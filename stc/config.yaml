@@ -1,9 +1,8 @@
-# dont move slurm section to set params correctly in get_slurm_params.sh
-# slurm:
-#   partition: gpu
-#   gres: 1
-#   cpus-per-task: 12
-#   job-name: sft_llama
+slurm:
+  partition: null
+  gres: null
+  cpus-per-task: null
+  job-name: null
 
 train_file: quotes_dataset/small_llama/train.csv
 validation_file: quotes_dataset/small_llama/train.csv
@@ -20,7 +19,7 @@ seed: 42
 completion_only: false
 
 clearml:
-  disable_clearml: false
+  disable_clearml:
   project_name: stc-llama
   experiment_name: null
 
