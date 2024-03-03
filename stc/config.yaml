@@ -3,9 +3,9 @@ slurm:
   gres: null
   cpus-per-task: null
   job-name: null
-  queue_time: null
-  launch_time: null
-  wait_hours: null
+  queue_time: 03/04/24 01:27:38
+  launch_time: 03/04/24 01:28:54
+  wait_hours: 0.021322324166666667
 
 
 train_file: quotes_dataset/small_llama/train.csv
@@ -28,7 +28,7 @@ clearml:
   experiment_name: null
 
 model:
-  model_name: /mnt/cs/nlu/models/LLMs/Sheared-LLaMA-1.3B
+  model_name: /mnt/hs/dorado6/mamaev-n/saiga_2/llama2-7b # /mnt/cs/nlu/models/LLMs/Sheared-LLaMA-1.3B
   token: null 
   split_model: false
   block_size: 1024
@@ -89,3 +89,4 @@ hydra:
   output_subdir: null  
   run:  
     dir: .
+dir: .
