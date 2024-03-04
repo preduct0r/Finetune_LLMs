@@ -3,9 +3,9 @@ slurm:
   gres: null
   cpus-per-task: null
   job-name: null
-  queue_time: 03/04/24 01:27:38
-  launch_time: 03/04/24 01:28:54
-  wait_hours: 0.021322324166666667
+  queue_time: 03/04/24 15:48:55
+  launch_time: 03/04/24 16:00:55
+  wait_hours: 0.20004833305555556
 
 
 train_file: quotes_dataset/small_llama/train.csv
@@ -28,7 +28,7 @@ clearml:
   experiment_name: null
 
 model:
-  model_name: /mnt/hs/dorado6/mamaev-n/saiga_2/llama2-7b # /mnt/cs/nlu/models/LLMs/Sheared-LLaMA-1.3B
+  model_name: /mnt/hs/dorado6/mamaev-n/saiga_2/Llama-2-13b-hf
   token: null 
   split_model: false
   block_size: 1024
@@ -38,7 +38,7 @@ train:
   epochs: 1
   batch_size: 1
   gradient_accumulation_steps: 1
-  gradient_checkpointing: false
+  gradient_checkpointing: true
   logging_steps: 200
   learning_rate: 1e-4
   weight_decay: 0.05

@@ -1,8 +1,8 @@
 #!/bin/sh
 
 # set params
-PARTITION=gpu
-NUM_GPUS=2
+PARTITION=a100
+NUM_GPUS=3
 CPUS_PER_TASK=12
 JOB_NAME=sft_llama
 
@@ -36,7 +36,7 @@ fi
 unset __conda_setup
 
 # launch
-conda activate stc_llama
+conda activate stc_llama_a100
 
 sbatch --export=PATH,LD_LIBRARY_PATH \
     --cpus-per-task=$CPUS_PER_TASK \
@@ -44,7 +44,7 @@ sbatch --export=PATH,LD_LIBRARY_PATH \
     --time=0-08:00:00 \
     --job-name=$JOB_NAME \
     -o /mnt/cs/nlu/home/kotov/LLM/SFT/slurm/output/$(date '+%Y_%m_%d_%H_%M_%S').txt \
-    accelerate launch --config_file stc/accelerate.yaml --use_fsdp --fsdp_offload_params true --fsdp_sharding_strategy 1 --num_processes $NUM_GPUS finetuning_repo/trl_finetune.py \
+    accelerate launch --config_file stc/accelerate.yaml --num_processes $NUM_GPUS finetuning_repo/trl_finetune.py \
     slurm.partition=$PARTITION \
     slurm.gres=$NUM_GPUS \
     slurm.job-name=$JOB_NAME \
